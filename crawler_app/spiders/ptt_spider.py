@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-# ./crawler_app/crawler_app/spiders/ptt_spider.py
+# ./crawler_app/spiders/ptt_spider.py
 # Jie-Ting Jiang
 # TODO: use binary search to retrieve articles if datetime is specified as a search condition
 import re
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
+import pytz
 import scrapy
 from scrapy.http import FormRequest
 from crawler_app.items import ArticleItem
@@ -13,7 +14,9 @@ class PTTSpider(scrapy.Spider):
     allowed_domains = ['ptt.cc']
 
     # get yesterday's date
-    _yesterday = (date.today() - timedelta(1)).strftime('%m/%d')
+    tz = pytz.timezone('Asia/Taipei')
+    taipei_now = datetime.now(tz)
+    _yesterday = (taipei_now - timedelta(1)).strftime('%m/%d')
     # mmdd -> (m)mdd
     if _yesterday[0] == '0':
         _yesterday = _yesterday.replace('0', ' ', 1)
@@ -193,8 +196,7 @@ class PTTSpider(scrapy.Spider):
             # article id
             a_id = url_groups.group(2)
             article['a_id'] = a_id
-            article['publish_dt'] = publish_dt
-
+            article['publish_dt'] = datetime.strftime(publish_dt, '%Y-%m-%d %H:%M:%S')
             total_score = 0
             article['comments'] = []
             for floor, cm in enumerate(n_response.xpath('//div[@class="push"]'), start=1):
@@ -244,7 +246,7 @@ class PTTSpider(scrapy.Spider):
                     comment['commentor'] = push_user
                     comment['score'] = push_score
                     comment['content'] = push_content
-                    comment['dt'] = push_dt
+                    comment['dt'] = datetime.strftime(push_dt, '%Y-%m-%d %H:%M:%S')
                     comment['ip'] = push_ip
 
                     # append item into the item list
