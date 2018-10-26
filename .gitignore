@@ -1,0 +1,5 @@
+*.txt
+!requirements.txt
+*.json
+/crawler_app/__pycache__/
+/crawler_app/spiders/__pycache__/
