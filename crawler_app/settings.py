@@ -8,8 +8,8 @@
 #     https://doc.scrapy.org/en/latest/topics/settings.html
 #     https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://doc.scrapy.org/en/latest/topics/spider-middleware.html
-from datetime import timedelta, date
-FILENAME = (date.today() - timedelta(1)).strftime("PTT_HatePolitics_%Y%m%d")
+# from datetime import timedelta, date
+# FILENAME = (date.today() - timedelta(1)).strftime("PTT_HatePolitics_%Y%m%d")
 
 BOT_NAME = 'crawler_app'
 
@@ -38,13 +38,13 @@ DOWNLOAD_DELAY = 1
 #COOKIES_ENABLED = False
 
 # Enable log file
-LOG_ENABLED = True
-LOG_FILE = FILENAME+'_log.txt'
-LOG_LEVEL = 'INFO'
+# LOG_ENABLED = True
+# LOG_FILE = FILENAME+'_log.txt'
+# LOG_LEVEL = 'INFO'
 
 # Enable feed exporter
-FEED_FORMAT = 'json'
-FEED_URI = FILENAME+'.json'
+# FEED_FORMAT = 'json'
+# FEED_URI = FILENAME+'.json'
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
