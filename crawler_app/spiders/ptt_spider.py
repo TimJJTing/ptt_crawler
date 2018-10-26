@@ -113,7 +113,7 @@ class PTTSpider(scrapy.Spider):
                     self._articles += 1
                     # extract the url
                     url = response.urljoin(title.css('div.title > a::attr(href)').extract_first())
-                    print(url)
+                    self.logger.info('Found a targrt article: '+url)
                     # crawl the content of the title
                     yield scrapy.Request(
                         url,
@@ -133,7 +133,7 @@ class PTTSpider(scrapy.Spider):
             # if there's next page, turn to the next page and continue crawling
             elif next_page and self._articles < self.max_articles:
                 url = response.urljoin(next_page.extract_first())
-                self.logger.info('follow %s', format(url))
+                self.logger.info('turning into page %s', format(url))
                 expired_articles = 0
                 yield scrapy.Request(url, self.parse_ptt_article_list)
             # if no next page
@@ -156,7 +156,7 @@ class PTTSpider(scrapy.Spider):
         ) # make "." also match \n and allow verbose regex
         # if the article is not a standard pattern
         if regexmatch is None:
-            self.logger.info('pattern not match at ' + response.url)
+            self.logger.error('pattern not match at ' + response.url)
 
         else:
             ip = regexmatch.group(4)
@@ -254,7 +254,7 @@ class PTTSpider(scrapy.Spider):
 
                 # if an error occurs
                 except AttributeError:
-                    self.logger.info('sth goes wrong at the '+ str(floor) + ' floor at '+ response.url)
+                    self.logger.error('sth goes wrong at the '+ str(floor) + ' floor at '+ response.url)
             # return the items to the pipeline (one article one return)
             article['score'] = total_score
             return article
