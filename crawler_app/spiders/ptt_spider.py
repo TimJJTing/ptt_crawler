@@ -46,14 +46,12 @@ class PTTSpider(scrapy.Spider):
         $                                                                       # ending
         """
     # constructor
-    def __init__(self, max_articles=10, max_retry=5, *args, **kwargs):
-        #def __init__(self, boards=[], *args, **kwargs):
-        #self.start_urls = ['https://www.ptt.cc/bbs/%s/index.html' % board for board in boards]
+    def __init__(self, board='HatePolitics', max_articles=10, max_retry=5, *args, **kwargs):
 
         super(PTTSpider, self).__init__(*args, **kwargs)
         self.start_urls = [
-            #'https://www.ptt.cc/bbs/Gossiping/index.html',
-            'https://www.ptt.cc/bbs/HatePolitics/index.html',
+            # e.g. 'https://www.ptt.cc/bbs/Gossiping/index.html',
+            'https://www.ptt.cc/bbs/%s/index.html'%board,
         ]
 
         self._retries = 0 # private, retires than have made
@@ -186,7 +184,7 @@ class PTTSpider(scrapy.Spider):
                 '%a %b %d %H:%M:%S %Y %z'
             )
             date_ptr = publish_dt
-            
+
             article['url'] = response.url
             url_groups = re.search(
                 self.re_url_pattern,
