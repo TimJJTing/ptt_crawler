@@ -11,7 +11,7 @@ class ArticleItem(scrapy.Item):
     title = scrapy.Field()
     author = scrapy.Field()
     publish_dt = scrapy.Field()
-    #content = scrapy.Field()
+    content = scrapy.Field()
     board = scrapy.Field()
     ip = scrapy.Field()
     comments = scrapy.Field()

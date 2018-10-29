@@ -2,6 +2,7 @@
 !requirements.txt
 *.yml
 *.json
+debugger.py
 /build/
 /project.egg-info/
 /crawler_app/__pycache__/
