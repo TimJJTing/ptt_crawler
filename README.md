@@ -1,7 +1,7 @@
 # PTT Crawler
 PTT crawler is a scrapy project for crawling PTT articles and is ready for the deployment on Scrapinghub. The key feature makes it differ from other similiar projects is that some possible complex PTT article patterns are considered (e.g. signature files (簽名檔), edited articles) and some algorithms are applied to deal with important values that are missing in sources (e.g. exact time and date of comments), so that a better data quality can be guaranteed. Note that due to efficiency issue it currently retrieves only articles from yesterday, although with some minor adjustments in the *ptt_spider.py* it is capable to retrieve articles from any date.  
 
-# Example Usuage
+# Example Usage
 Command pattern:  
 
     scrapy crawl ptt <-a argument=value> <-o outputfile.json>  
