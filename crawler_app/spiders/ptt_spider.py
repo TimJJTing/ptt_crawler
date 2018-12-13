@@ -174,125 +174,134 @@ class PTTSpider(scrapy.Spider):
         """
         parser for the ptt articles
         """
-        # extract all contents including tags in a string
-        # decode response.body from ascii to unicode
-        body = response.body.decode()
-        regexmatch = re.match(
-            self.re_ptt_article_page_pattern,
-            body,
-            re.S|re.X
-        ) # make "." also match \n and allow verbose regex
-        # if the article is not a standard pattern
-        if regexmatch is None:
-            self.logger.error('pattern not match at ' + response.url)
-
+        if response.xpath('//div[@class="over18-notice"]'):
+            # answer the question and callback to parse
+            yield FormRequest.from_response(response,
+                                            formdata={'yes': 'yes'},
+                                            callback=self.parse_article,
+                                            dont_filter=True)
         else:
-            # find author's ip
-            ip = regexmatch.group('ip')
-            # remove the signature file and <head></head> from original data
-            n_body = re.sub(
+            # extract all contents including tags in a string
+            # decode response.body from ascii to unicode
+            body = response.body.decode()
+            regexmatch = re.match(
                 self.re_ptt_article_page_pattern,
-                r"\g<head1>\g<head2>\g<main_content>\g<comments>\g<tail>",
                 body,
-                0,
                 re.S|re.X
             ) # make "." also match \n and allow verbose regex
-            n_response = response.replace(body=n_body)
-            article = ArticleItem()
-            # extract user's ip
-            article['ip'] = ip
-            # extract article title
-            article['title'] = n_response.xpath(
-                '//div[@class="article-metaline"]/span[text()="標題"]/following-sibling::span[1]/text()'
-            ).extract_first().strip()
-            # extract article date time
-            datetime_str = n_response.xpath(
-                '//div[@class="article-metaline"]/span[text()="時間"]/following-sibling::span[1]/text()'
-            ).extract_first()
-            publish_dt = datetime.strptime(datetime_str+' +0800', '%a %b %d %H:%M:%S %Y %z')
-            # save a date pointer for later use
-            date_ptr = publish_dt
-            # publish date
-            article['publish_dt'] = datetime.strftime(publish_dt, '%Y-%m-%d %H:%M:%S')
-            if self.get_content:
-                # convert content from a list of strings to a single string
-                content = str.join(
-                    '\n',
-                    n_response.xpath('//div[@id="main-content"]/text()').extract()
-                )
-                article['content'] = content.strip()
-            # extract article url
-            article['url'] = response.url
-            url_groups = re.search(
-                self.re_url_pattern,
-                response.url
-            )
-            # board name
-            article['board'] = url_groups.group('board')
-            # article id
-            article['a_id'] = url_groups.group('a_id')
+            # if the article is not a standard pattern
+            if regexmatch is None:
+                self.logger.error('pattern not match at ' + response.url)
 
-            if self.get_comments:
-                total_score = 0
-                article['comments'] = []
-                # for each comment in comments
-                for floor, cm in enumerate(n_response.xpath('//div[@class="push"]'), start=1):
-                    push_ipdatetime_str = cm.css('span.push-ipdatetime::text').extract_first().strip()
-                    # matches re_push_ip_datetime_pattern
-                    # re.match()?
-                    push_ipdatetime_str_groups = re.search(
-                        self.re_push_ip_datetime_pattern,
-                        push_ipdatetime_str,
-                        re.S|re.X
+            else:
+                self.logger.info('crawling ' + response.url)
+                # find author's ip
+                ip = regexmatch.group('ip')
+                # remove the signature file and <head></head> from original data
+                n_body = re.sub(
+                    self.re_ptt_article_page_pattern,
+                    r"\g<head1>\g<head2>\g<main_content>\g<comments>\g<tail>",
+                    body,
+                    0,
+                    re.S|re.X
+                ) # make "." also match \n and allow verbose regex
+                n_response = response.replace(body=n_body)
+                article = ArticleItem()
+                # extract user's ip
+                article['ip'] = ip
+                # extract article title
+                article['title'] = n_response.xpath(
+                    '//div[@class="article-metaline"]/span[text()="標題"]/following-sibling::span[1]/text()'
+                ).extract_first().strip()
+                # extract article date time
+                datetime_str = n_response.xpath(
+                    '//div[@class="article-metaline"]/span[text()="時間"]/following-sibling::span[1]/text()'
+                ).extract_first()
+                publish_dt = datetime.strptime(datetime_str+' +0800', '%a %b %d %H:%M:%S %Y %z')
+                # save a date pointer for later use
+                date_ptr = publish_dt
+                # publish date
+                article['publish_dt'] = datetime.strftime(publish_dt, '%Y-%m-%d %H:%M:%S')
+                if self.get_content:
+                    # convert content from a list of strings to a single string
+                    content = str.join(
+                        '\n',
+                        n_response.xpath('//div[@id="main-content"]/text()').extract()
                     )
-                    try:
-                        #if push_ipdatetime_str_groups.group(1) is not None:
-                        push_ip = push_ipdatetime_str_groups.group('ip')
-                        push_month_str = push_ipdatetime_str_groups.group('month')
-                        push_day_str = push_ipdatetime_str_groups.group('day')
-                        push_time_str = push_ipdatetime_str_groups.group('time')
-                        push_year = date_ptr.year
-                        # if date_of_this_push < date_pointer, year++
-                        # TODO: consider if a signature file causes the failure of this logic
-                        if int(push_month_str) < date_ptr.month and int(push_day_str) < date_ptr.day:
-                            push_year = date_ptr.year + 1
-                        push_dt = datetime.strptime(
-                            str(push_year)+' '+push_month_str+' '+push_day_str+' '+push_time_str+' +0800',
-                            '%Y %m %d %H:%M %z'
+                    article['content'] = content.strip()
+                # extract article url
+                article['url'] = response.url
+                url_groups = re.search(
+                    self.re_url_pattern,
+                    response.url
+                )
+                # board name
+                article['board'] = url_groups.group('board')
+                # article id
+                article['a_id'] = url_groups.group('a_id')
+
+                if self.get_comments:
+                    total_score = 0
+                    article['comments'] = []
+                    # for each comment in comments
+                    for floor, cm in enumerate(n_response.xpath('//div[@class="push"]'), start=1):
+                        push_ipdatetime_str = cm.css('span.push-ipdatetime::text').extract_first().strip()
+                        # matches re_push_ip_datetime_pattern
+                        # re.match()?
+                        push_ipdatetime_str_groups = re.search(
+                            self.re_push_ip_datetime_pattern,
+                            push_ipdatetime_str,
+                            re.S|re.X
                         )
-                        # fetch date_pointer
-                        date_ptr = push_dt
+                        try:
+                            #if push_ipdatetime_str_groups.group(1) is not None:
+                            push_ip = push_ipdatetime_str_groups.group('ip')
+                            push_month_str = push_ipdatetime_str_groups.group('month')
+                            push_day_str = push_ipdatetime_str_groups.group('day')
+                            push_time_str = push_ipdatetime_str_groups.group('time')
+                            push_year = date_ptr.year
+                            # if date_of_this_push < date_pointer, year++
+                            # TODO: consider if a signature file causes the failure of this logic
+                            if int(push_month_str) < date_ptr.month and int(push_day_str) < date_ptr.day:
+                                push_year = date_ptr.year + 1
+                            push_dt = datetime.strptime(
+                                str(push_year)+' '+push_month_str+' '+push_day_str+' '+push_time_str+' +0800',
+                                '%Y %m %d %H:%M %z'
+                            )
+                            # fetch date_pointer
+                            date_ptr = push_dt
 
-                        # real comments
-                        push_tag = cm.css('span.push-tag::text').extract_first()
-                        push_user = cm.css('span.push-userid::text').extract_first()
+                            # real comments
+                            push_tag = cm.css('span.push-tag::text').extract_first()
+                            push_user = cm.css('span.push-userid::text').extract_first()
 
-                        # content starts from the third char (': blabla')
-                        push_content = cm.css('span.push-content::text').extract_first()[2:]
+                            # content starts from the third char (': blabla')
+                            push_content = cm.css('span.push-content::text').extract_first()[2:]
 
-                        if '推' in push_tag:
-                            push_score = 1
-                        elif '噓' in push_tag:
-                            push_score = -1
-                        else:
-                            push_score = 0
-                        total_score += push_score
+                            if '推' in push_tag:
+                                push_score = 1
+                            elif '噓' in push_tag:
+                                push_score = -1
+                            else:
+                                push_score = 0
+                            total_score += push_score
 
-                        comment = {}
-                        comment['floor'] = floor
-                        comment['commentor'] = push_user
-                        comment['score'] = push_score
-                        comment['content'] = push_content.strip()
-                        comment['dt'] = datetime.strftime(push_dt, '%Y-%m-%d %H:%M:%S')
-                        if push_ip:
-                            comment['ip'] = push_ip
+                            comment = {}
+                            comment['floor'] = floor
+                            comment['commentor'] = push_user
+                            comment['score'] = push_score
+                            comment['content'] = push_content.strip()
+                            comment['dt'] = datetime.strftime(push_dt, '%Y-%m-%d %H:%M:%S')
+                            if push_ip:
+                                comment['ip'] = push_ip
 
-                        # append item into the item list
-                        article['comments'].append(comment)
+                            # append item into the item list
+                            article['comments'].append(comment)
 
-                    # if an unhandable AttributeError occurs
-                    except AttributeError:
-                        self.logger.error('sth goes wrong at the '+ str(floor) + ' floor at '+ response.url)
-                # return the items to the pipeline (one article one return)
-                article['score'] = total_score
-            return article
+                        # if an unhandable AttributeError occurs
+                        except AttributeError:
+                            self.logger.error('sth goes wrong at the '+ str(floor) + ' floor at '+ response.url)
+                    # return the items to the pipeline (one article one return)
+                    article['score'] = total_score
+                #print(article)
+                yield article
