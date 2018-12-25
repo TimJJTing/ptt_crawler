@@ -213,6 +213,8 @@ class PTTSpider(scrapy.Spider):
                 article['title'] = n_response.xpath(
                     '//div[@class="article-metaline"]/span[text()="標題"]/following-sibling::span[1]/text()'
                 ).extract_first().strip()
+                # extract author, discard nickname
+                article['author'] = n_response.xpath('//div[@class="article-metaline"]/span[text()="作者"]/following-sibling::span[1]/text()').extract_first().split(' ')[0]
                 # extract article date time
                 datetime_str = n_response.xpath(
                     '//div[@class="article-metaline"]/span[text()="時間"]/following-sibling::span[1]/text()'
